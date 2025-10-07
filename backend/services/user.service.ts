@@ -1,5 +1,7 @@
 import { User, Role } from '../generated/prisma';
 import prisma from '../config/database';
+import bcrypt from 'bcrypt';
+import * as emailService from './email.service';
 
 export interface UserListQuery {
   page?: number;
@@ -23,9 +25,77 @@ export interface UpdateUserInput {
   firstName?: string;
   lastName?: string;
   email?: string;
+  password?: string;
   role?: Role;
   isActive?: boolean;
 }
+
+/**
+ * Create new user
+ */
+export const createUser = async (data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role?: Role;
+}): Promise<Omit<User, 'password'>> => {
+  // Check if user already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { email: data.email },
+  });
+
+  if (existingUser) {
+    throw new Error('User with this email already exists');
+  }
+
+  // Store plain password for email (before hashing)
+  const plainPassword = data.password;
+
+  // Hash password
+  const hashedPassword = await bcrypt.hash(data.password, 10);
+
+  // Create user
+  const user = await prisma.user.create({
+    data: {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      password: hashedPassword,
+      role: data.role || Role.USER,
+      isActive: true,
+      isEmailVerified: true, // Admin-created users are auto-verified
+      mustChangePassword: true, // Require password change on first login
+    },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      isActive: true,
+      isEmailVerified: true,
+      lastLoginAt: true,
+      lastLoginIp: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  // Send welcome email with credentials (async, don't wait)
+  emailService.sendNewAccountEmail(
+    user.email,
+    user.firstName,
+    user.lastName,
+    plainPassword,
+    user.role
+  ).catch(err => {
+    console.error('Failed to send welcome email:', err);
+    // Don't throw error - user creation should succeed even if email fails
+  });
+
+  return user as Omit<User, 'password'>;
+};
 
 /**
  * Get all users with pagination and filters
@@ -138,9 +208,15 @@ export const updateUser = async (
     }
   }
 
+  // Hash password if provided
+  const updateData: any = { ...data };
+  if (data.password) {
+    updateData.password = await bcrypt.hash(data.password, 10);
+  }
+
   const user = await prisma.user.update({
     where: { id: userId },
-    data,
+    data: updateData,
     select: {
       id: true,
       email: true,

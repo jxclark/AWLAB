@@ -143,11 +143,12 @@ export const changePassword = async (
     },
   });
 
-  // Update password
+  // Update password and clear mustChangePassword flag
   await prisma.user.update({
     where: { id: userId },
     data: {
       password: hashedPassword,
+      mustChangePassword: false, // Clear temporary password flag
     },
   });
 };

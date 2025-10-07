@@ -44,8 +44,15 @@ export default function LoginPage() {
       localStorage.setItem('refreshToken', data.data.refreshToken);
       localStorage.setItem('user', JSON.stringify(data.data.user));
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Check if user must change password
+      if (data.data.mustChangePassword) {
+        // Redirect to password change page with email and temp password
+        localStorage.setItem('mustChangePassword', 'true');
+        router.push(`/change-password?email=${encodeURIComponent(formData.email)}&temp=${encodeURIComponent(formData.password)}`);
+      } else {
+        // Redirect to dashboard
+        router.push('/dashboard');
+      }
     } catch (err: unknown) {
       setError((err as Error).message || 'An error occurred during login');
     } finally {

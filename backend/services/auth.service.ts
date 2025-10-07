@@ -28,6 +28,7 @@ export interface AuthResponse {
   user: Omit<User, 'password'>;
   accessToken: string;
   refreshToken: string;
+  mustChangePassword?: boolean;
 }
 
 /**
@@ -201,6 +202,7 @@ export const loginUser = async (data: LoginInput): Promise<AuthResponse> => {
     user: userWithoutPassword,
     accessToken,
     refreshToken,
+    mustChangePassword: user.mustChangePassword, // Include flag for password change requirement
   };
 };
 
