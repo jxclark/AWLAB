@@ -53,10 +53,22 @@ export const getFolders = async (): Promise<FolderInfo[]> => {
   }
 };
 
+export interface PaginatedFiles {
+  files: FileInfo[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 /**
- * Get all PDF files in a specific folder
+ * Get all PDF files in a specific folder with pagination
  */
-export const getFilesInFolder = async (folderName: string): Promise<FileInfo[]> => {
+export const getFilesInFolder = async (
+  folderName: string,
+  page: number = 1,
+  pageSize: number = 50
+): Promise<PaginatedFiles> => {
   try {
     const folderPath = path.join(BASE_PATH, folderName);
     
@@ -69,7 +81,7 @@ export const getFilesInFolder = async (folderName: string): Promise<FileInfo[]> 
 
     const entries = await fs.readdir(folderPath, { withFileTypes: true });
     
-    const files = await Promise.all(
+    const allFiles = await Promise.all(
       entries
         .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.pdf'))
         .map(async (entry) => {
@@ -87,7 +99,22 @@ export const getFilesInFolder = async (folderName: string): Promise<FileInfo[]> 
     );
 
     // Sort by name
-    return files.sort((a, b) => a.name.localeCompare(b.name));
+    const sortedFiles = allFiles.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Calculate pagination
+    const total = sortedFiles.length;
+    const totalPages = Math.ceil(total / pageSize);
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedFiles = sortedFiles.slice(startIndex, endIndex);
+
+    return {
+      files: paginatedFiles,
+      total,
+      page,
+      pageSize,
+      totalPages,
+    };
   } catch (error: any) {
     console.error('Error reading files:', error);
     throw new Error(`Failed to read files: ${error.message}`);
@@ -166,8 +193,8 @@ export const searchFiles = async (query: string): Promise<FileInfo[]> => {
     const allFiles: FileInfo[] = [];
 
     for (const folder of folders) {
-      const files = await getFilesInFolder(folder.name);
-      const matchingFiles = files.filter(file =>
+      const result = await getFilesInFolder(folder.name, 1, 10000); // Get all files for search
+      const matchingFiles = result.files.filter((file: FileInfo) =>
         file.name.toLowerCase().includes(query.toLowerCase())
       );
       allFiles.push(...matchingFiles);
