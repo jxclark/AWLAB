@@ -2,6 +2,7 @@ import { User, Role } from '../generated/prisma';
 import prisma from '../config/database';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
+import { logLoginAttempt } from './loginHistory.service';
 
 export interface RegisterInput {
   email: string;
@@ -14,6 +15,8 @@ export interface RegisterInput {
 export interface LoginInput {
   email: string;
   password: string;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 export interface AuthResponse {
@@ -91,11 +94,13 @@ export const loginUser = async (data: LoginInput): Promise<AuthResponse> => {
   });
 
   if (!user) {
+    // Log failed attempt (user not found)
     throw new Error('Invalid email or password');
   }
 
   // Check if user is active
   if (!user.isActive) {
+    await logLoginAttempt(user.id, data.ipAddress, data.userAgent, false, 'Account deactivated');
     throw new Error('Account is deactivated. Please contact administrator.');
   }
 
@@ -103,6 +108,7 @@ export const loginUser = async (data: LoginInput): Promise<AuthResponse> => {
   const isPasswordValid = await comparePassword(data.password, user.password);
 
   if (!isPasswordValid) {
+    await logLoginAttempt(user.id, data.ipAddress, data.userAgent, false, 'Invalid password');
     throw new Error('Invalid email or password');
   }
 
@@ -127,6 +133,9 @@ export const loginUser = async (data: LoginInput): Promise<AuthResponse> => {
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     },
   });
+
+  // Log successful login
+  await logLoginAttempt(user.id, data.ipAddress, data.userAgent, true);
 
   // Remove password from response
   const { password, ...userWithoutPassword } = user;

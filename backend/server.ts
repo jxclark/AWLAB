@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.routes';
 import passwordRoutes from './routes/password.routes';
 import userRoutes from './routes/user.routes';
 import sessionRoutes from './routes/session.routes';
+import loginHistoryRoutes from './routes/loginHistory.routes';
 
 // Load environment variables
 dotenv.config();
@@ -34,6 +35,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/auth', passwordRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/login-history', loginHistoryRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
