@@ -202,3 +202,72 @@ export const sendWelcomeEmail = async (
     `,
   });
 };
+
+/**
+ * Send new account email with credentials (for admin-created users)
+ */
+export const sendNewAccountEmail = async (
+  email: string,
+  firstName: string,
+  lastName: string,
+  password: string,
+  role: string
+): Promise<void> => {
+  const loginUrl = `${FRONTEND_URL}/login`;
+
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to: email,
+    subject: 'Your New Account - Client Files Viewer',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #4F46E5; color: white; padding: 20px; text-align: center; }
+          .content { background-color: #f9f9f9; padding: 30px; }
+          .credentials { background-color: #fff; border: 2px solid #4F46E5; padding: 20px; margin: 20px 0; border-radius: 5px; }
+          .button { display: inline-block; padding: 12px 30px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+          .warning { background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎉 Welcome to Client Files Viewer!</h1>
+          </div>
+          <div class="content">
+            <h2>Hello ${firstName} ${lastName}!</h2>
+            <p>An administrator has created an account for you on Client Files Viewer.</p>
+            
+            <div class="credentials">
+              <h3>Your Login Credentials:</h3>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Temporary Password:</strong> <code style="background: #f0f0f0; padding: 5px 10px; border-radius: 3px; font-size: 14px;">${password}</code></p>
+              <p><strong>Role:</strong> ${role.replace('_', ' ')}</p>
+            </div>
+
+            <div class="warning">
+              <strong>🔒 Security Notice:</strong>
+              <p>Please change your password after your first login for security purposes.</p>
+            </div>
+
+            <a href="${loginUrl}" class="button" style="color: white; text-decoration: none;">Login to Your Account</a>
+
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #4F46E5;">${loginUrl}</p>
+
+            <p>If you have any questions or need assistance, please contact your administrator.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated message, please do not reply.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  });
+};

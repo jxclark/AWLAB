@@ -23,6 +23,7 @@ model User {
   role                  Role      @default(USER)
   isActive              Boolean   @default(true)
   isEmailVerified       Boolean   @default(false)
+  mustChangePassword    Boolean   @default(false)
   emailVerificationToken String?  @unique
   emailVerificationExpiry DateTime?
   passwordResetToken    String?   @unique

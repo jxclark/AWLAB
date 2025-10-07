@@ -24,6 +24,24 @@ router.get('/stats', requireAdmin, userController.getUserStats);
 router.get('/', requireAdmin, userController.getAllUsers);
 
 /**
+ * @route   POST /api/users
+ * @desc    Create new user
+ * @access  Private (Admin+)
+ */
+router.post(
+  '/',
+  requireAdmin,
+  [
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('firstName').notEmpty().withMessage('First name is required'),
+    body('lastName').notEmpty().withMessage('Last name is required'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('role').optional().isIn(['SUPER_ADMIN', 'ADMIN', 'USER']).withMessage('Invalid role'),
+  ],
+  userController.createUser
+);
+
+/**
  * @route   GET /api/users/:id
  * @desc    Get user by ID
  * @access  Private (Admin+)

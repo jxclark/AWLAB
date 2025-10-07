@@ -59,6 +59,39 @@ export const getUserById = async (req: Request, res: Response) => {
 };
 
 /**
+ * Create new user
+ * POST /api/users
+ */
+export const createUser = async (req: Request, res: Response) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { firstName, lastName, email, password, role } = req.body;
+
+    const user = await userService.createUser({
+      firstName,
+      lastName,
+      email,
+      password,
+      role: role || 'USER',
+    });
+
+    res.status(201).json({
+      message: 'User created successfully',
+      data: user,
+    });
+  } catch (error: any) {
+    console.error('Create user error:', error);
+    res.status(400).json({
+      error: error.message || 'Failed to create user',
+    });
+  }
+};
+
+/**
  * Update user
  * PUT /api/users/:id
  */
@@ -70,15 +103,22 @@ export const updateUser = async (req: Request, res: Response) => {
     }
 
     const { id } = req.params;
-    const { firstName, lastName, email, role, isActive } = req.body;
+    const { firstName, lastName, email, password, role, isActive } = req.body;
 
-    const user = await userService.updateUser(id, {
+    const updateData: any = {
       firstName,
       lastName,
       email,
       role,
       isActive,
-    });
+    };
+
+    // Only include password if provided
+    if (password) {
+      updateData.password = password;
+    }
+
+    const user = await userService.updateUser(id, updateData);
 
     res.status(200).json({
       message: 'User updated successfully',
