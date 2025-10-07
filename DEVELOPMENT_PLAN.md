@@ -51,7 +51,7 @@
 
 ### Additional Auth Features (Priority 2 - Important) 🔄 IN PROGRESS
 - [x] Session management (view/revoke active sessions) ✅ COMPLETE
-- [ ] Login history/audit trail
+- [x] Login history/audit trail ✅ COMPLETE
 - [ ] Rate limiting (prevent brute force attacks)
 - [ ] Account lockout (after failed login attempts)
 
@@ -61,6 +61,14 @@
 - `routes/session.routes.ts` - Session routes
 
 **🔄 READY TO COMMIT - Branch: `03-session-management`**
+
+**Login History - Files Created:**
+- `services/loginHistory.service.ts` - Login tracking and stats
+- `controllers/loginHistory.controller.ts` - Login history endpoints
+- `routes/loginHistory.routes.ts` - Login history routes
+- Updated `auth.service.ts` - Log all login attempts
+
+**🔄 READY TO COMMIT - Branch: `04-login-history-audit`**
 
 ### Additional Auth Features (Priority 3 - Advanced)
 - [ ] IP tracking and device fingerprinting

@@ -61,8 +61,17 @@ export const login = async (req: Request, res: Response) => {
 
     const { email, password } = req.body;
 
+    // Get IP address and user agent
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
     // Login user
-    const result = await authService.loginUser({ email, password });
+    const result = await authService.loginUser({ 
+      email, 
+      password,
+      ipAddress,
+      userAgent
+    });
 
     res.status(200).json({
       message: 'Login successful',
