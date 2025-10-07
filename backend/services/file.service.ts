@@ -5,6 +5,9 @@ import { stat } from 'fs/promises';
 // Network share path
 const BASE_PATH = process.env.FILES_BASE_PATH!;
 
+// Local trash folder (in backend app)
+const TRASH_PATH = path.join(__dirname, '..', 'trash');
+
 export interface FileInfo {
   name: string;
   size: number;
@@ -164,7 +167,7 @@ export const uploadFile = async (
 };
 
 /**
- * Delete a file (admin only)
+ * Move file to trash (admin only) - copies to local trash folder then deletes from network share
  */
 export const deleteFile = async (folderName: string, fileName: string): Promise<void> => {
   try {
@@ -177,9 +180,34 @@ export const deleteFile = async (folderName: string, fileName: string): Promise<
       throw new Error('File not found');
     }
 
+    // Create local trash folder structure: backend/trash/[folderName]/
+    const trashFolderPath = path.join(TRASH_PATH, folderName);
+    await fs.mkdir(trashFolderPath, { recursive: true });
+
+    // Copy file to trash with timestamp and metadata
+    const timestamp = new Date().getTime();
+    const trashFileName = `${timestamp}_${fileName}`;
+    const trashFilePath = path.join(trashFolderPath, trashFileName);
+
+    // Copy the file to local trash
+    await fs.copyFile(filePath, trashFilePath);
+    
+    // Create metadata file
+    const metadataPath = path.join(trashFolderPath, `${timestamp}_${fileName}.meta.json`);
+    const metadata = {
+      originalFolder: folderName,
+      originalFileName: fileName,
+      deletedAt: new Date().toISOString(),
+      deletedTimestamp: timestamp,
+    };
+    await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+
+    // Delete from network share
     await fs.unlink(filePath);
+    
+    console.log(`✅ Moved to trash: ${folderName}/${fileName} -> local trash/${folderName}/${trashFileName}`);
   } catch (error: any) {
-    console.error('Error deleting file:', error);
+    console.error('Error moving file to trash:', error);
     throw new Error(`Failed to delete file: ${error.message}`);
   }
 };

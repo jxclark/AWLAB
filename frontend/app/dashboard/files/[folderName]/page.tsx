@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FileText, Search, Loader2, AlertCircle, ChevronLeft, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DeleteFileDialog } from '@/components/DeleteFileDialog';
 
 interface FileInfo {
   name: string;
@@ -39,6 +40,9 @@ export default function FolderPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const pageSize = 25;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<FileInfo | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
 
   useEffect(() => {
@@ -98,15 +102,19 @@ export default function FolderPage() {
     router.push(`/dashboard/files/${folderName}/view/${encodeURIComponent(file.name)}`);
   };
 
-  const handleDeleteFile = async (file: FileInfo) => {
-    if (!confirm(`Are you sure you want to delete "${file.name}"?`)) {
-      return;
-    }
+  const handleDeleteClick = (file: FileInfo) => {
+    setFileToDelete(file);
+    setDeleteDialogOpen(true);
+  };
 
+  const handleDeleteConfirm = async () => {
+    if (!fileToDelete) return;
+
+    setIsDeleting(true);
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(
-        `http://localhost:5000/api/files/${folderName}/${encodeURIComponent(file.name)}`,
+        `http://localhost:5000/api/files/${folderName}/${encodeURIComponent(fileToDelete.name)}`,
         {
           method: 'DELETE',
           headers: {
@@ -120,10 +128,14 @@ export default function FolderPage() {
         throw new Error(data.error || 'Failed to delete file');
       }
 
-      // Refresh file list
-      fetchFiles();
+      // Close dialog and refresh file list
+      setDeleteDialogOpen(false);
+      setFileToDelete(null);
+      fetchFiles(currentPage);
     } catch (err: unknown) {
-      alert((err as Error).message);
+      setError((err as Error).message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -247,7 +259,7 @@ export default function FolderPage() {
                         className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteFile(file);
+                          handleDeleteClick(file);
                         }}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
@@ -299,6 +311,15 @@ export default function FolderPage() {
           {filteredFiles.length} file{filteredFiles.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteFileDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        fileName={fileToDelete?.name || ''}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
