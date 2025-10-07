@@ -98,6 +98,39 @@ npm install -D @types/ua-parser-js
 
 **🔄 READY TO COMMIT - Branch: `06-device-tracking`**
 
+---
+
+### File Management System 🔄 IN PROGRESS
+
+**Backend File API - Files Created:**
+- `services/file.service.ts` - Network share file operations
+- `controllers/file.controller.ts` - File endpoints
+- `routes/file.routes.ts` - File routes with multer upload
+
+**Features:**
+- List all date folders (sorted newest to oldest)
+- Get PDFs in a folder
+- Download/view PDFs
+- Search files across folders
+- Upload PDF (admin only)
+- Delete PDF (admin only)
+
+**⚠️ DEPENDENCIES REQUIRED:**
+```bash
+npm install multer
+npm install -D @types/multer
+```
+
+**⚠️ ENV VARIABLE REQUIRED:**
+Add to `.env`:
+```
+FILES_BASE_PATH=\\192.168.70.10\Client_Assessments
+```
+
+**🔄 READY TO COMMIT - Branch: `07-backend-file-management`**
+
+---
+
 ### Testing Backend Auth
 - [ ] Test user registration
 - [ ] Test user login
