@@ -3,6 +3,10 @@ import prisma from '../config/database';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
 import { logLoginAttempt } from './loginHistory.service';
+import { sendAccountLockedEmail } from './email.service';
+
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
 export interface RegisterInput {
   email: string;
@@ -98,6 +102,13 @@ export const loginUser = async (data: LoginInput): Promise<AuthResponse> => {
     throw new Error('Invalid email or password');
   }
 
+  // Check if account is locked
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    const remainingTime = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+    await logLoginAttempt(user.id, data.ipAddress, data.userAgent, false, 'Account locked');
+    throw new Error(`Account is locked. Please try again in ${remainingTime} minutes.`);
+  }
+
   // Check if user is active
   if (!user.isActive) {
     await logLoginAttempt(user.id, data.ipAddress, data.userAgent, false, 'Account deactivated');
@@ -108,8 +119,41 @@ export const loginUser = async (data: LoginInput): Promise<AuthResponse> => {
   const isPasswordValid = await comparePassword(data.password, user.password);
 
   if (!isPasswordValid) {
-    await logLoginAttempt(user.id, data.ipAddress, data.userAgent, false, 'Invalid password');
-    throw new Error('Invalid email or password');
+    // Increment failed login attempts
+    const failedAttempts = user.failedLoginAttempts + 1;
+    
+    // Lock account if max attempts reached
+    if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
+      const lockUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+      
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: failedAttempts,
+          lockedUntil: lockUntil,
+        },
+      });
+
+      await logLoginAttempt(user.id, data.ipAddress, data.userAgent, false, 'Account locked due to max attempts');
+      
+      // Send account locked email
+      await sendAccountLockedEmail(user.email, user.firstName, lockUntil);
+      
+      throw new Error('Account locked due to too many failed login attempts. Check your email for details.');
+    } else {
+      // Update failed attempts count
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: failedAttempts,
+        },
+      });
+
+      await logLoginAttempt(user.id, data.ipAddress, data.userAgent, false, 'Invalid password');
+      
+      const attemptsLeft = MAX_FAILED_ATTEMPTS - failedAttempts;
+      throw new Error(`Invalid email or password. ${attemptsLeft} attempt(s) remaining.`);
+    }
   }
 
   // Generate tokens
@@ -131,6 +175,15 @@ export const loginUser = async (data: LoginInput): Promise<AuthResponse> => {
       userId: user.id,
       token: refreshToken,
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    },
+  });
+
+  // Reset failed login attempts on successful login
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      failedLoginAttempts: 0,
+      lockedUntil: null,
     },
   });
 
