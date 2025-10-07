@@ -94,9 +94,8 @@ export default function FolderPage() {
   }, [folderName]);
 
   const handleOpenFile = (file: FileInfo) => {
-    const token = localStorage.getItem('accessToken');
-    const url = `http://localhost:5000/api/files/download/${folderName}/${encodeURIComponent(file.name)}`;
-    window.open(`${url}?token=${token}`, '_blank');
+    // Navigate to PDF viewer page
+    router.push(`/dashboard/files/${folderName}/view/${encodeURIComponent(file.name)}`);
   };
 
   const handleDeleteFile = async (file: FileInfo) => {
@@ -228,7 +227,7 @@ export default function FolderPage() {
                     <FileText className="h-5 w-5 text-red-500 flex-shrink-0" />
                     <button
                       onClick={() => handleOpenFile(file)}
-                      className="font-medium text-left hover:text-indigo-600 transition-colors"
+                      className="font-medium text-left hover:text-indigo-600 hover:underline transition-colors cursor-pointer"
                     >
                       {file.name}
                     </button>
