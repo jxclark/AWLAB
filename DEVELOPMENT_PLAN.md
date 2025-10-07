@@ -49,11 +49,11 @@
 
 ---
 
-### Additional Auth Features (Priority 2 - Important) 🔄 IN PROGRESS
+### Additional Auth Features (Priority 2 - Important) ✅ COMPLETE
 - [x] Session management (view/revoke active sessions) ✅ COMPLETE
 - [x] Login history/audit trail ✅ COMPLETE
-- [ ] Rate limiting (prevent brute force attacks)
-- [ ] Account lockout (after failed login attempts)
+- [x] Rate limiting (prevent brute force attacks) ✅ COMPLETE
+- [x] Account lockout (after failed login attempts) ✅ COMPLETE
 
 **Session Management - Files Created:**
 - `services/session.service.ts` - Session CRUD and cleanup
@@ -69,6 +69,14 @@
 - Updated `auth.service.ts` - Log all login attempts
 
 **🔄 READY TO COMMIT - Branch: `04-login-history-audit`**
+
+**Rate Limiting & Account Lockout - Files Created:**
+- `middleware/rateLimit.ts` - Rate limiting middleware
+- Updated `auth.service.ts` - Account lockout logic (5 attempts, 30 min lock)
+- Updated `routes/auth.routes.ts` - Applied rate limiting to login
+- Updated `routes/password.routes.ts` - Applied rate limiting to password reset
+
+**🔄 READY TO COMMIT - Branch: `05-rate-limit-lockout`**
 
 ### Additional Auth Features (Priority 3 - Advanced)
 - [ ] IP tracking and device fingerprinting

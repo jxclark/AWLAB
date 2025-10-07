@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 import * as passwordController from '../controllers/password.controller';
 import { authenticateToken } from '../middleware/auth';
+import { passwordResetRateLimiter, emailVerificationRateLimiter } from '../middleware/rateLimit';
 
 const router = Router();
 
@@ -12,6 +13,7 @@ const router = Router();
  */
 router.post(
   '/forgot-password',
+  passwordResetRateLimiter,
   [body('email').isEmail().withMessage('Valid email is required')],
   passwordController.forgotPassword
 );
@@ -50,7 +52,7 @@ router.post(
  * @desc    Send email verification
  * @access  Private
  */
-router.post('/send-verification', authenticateToken, passwordController.sendVerification);
+router.post('/send-verification', authenticateToken, emailVerificationRateLimiter, passwordController.sendVerification);
 
 /**
  * @route   POST /api/auth/verify-email
