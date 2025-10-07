@@ -3,3 +3,6 @@ node_modules
 .env
 
 /generated/prisma
+
+# Trash folder for deleted files
+/trash
