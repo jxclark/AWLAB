@@ -48,16 +48,18 @@ export const getFilesInFolder = async (req: Request, res: Response) => {
 
 /**
  * Download a file
- * GET /api/files/download/:folderName/:fileName
+ * GET /api/files/download/:folderName/:fileName?token=xxx
  */
 export const downloadFile = async (req: Request, res: Response) => {
   try {
     const { folderName, fileName } = req.params;
     const filePath = await fileService.getFilePath(folderName, fileName);
 
-    // Set headers for PDF download
+    // Set headers for PDF viewing in browser
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
 
     // Stream the file
     const fileStream = fs.createReadStream(filePath);

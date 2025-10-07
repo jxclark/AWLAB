@@ -21,7 +21,23 @@ const upload = multer({
   },
 });
 
-// All file routes require authentication
+// Middleware to handle token from query string (for iframe viewing)
+const handleQueryToken = (req: any, res: any, next: any) => {
+  const queryToken = req.query.token as string;
+  if (queryToken && !req.headers.authorization) {
+    req.headers.authorization = `Bearer ${queryToken}`;
+  }
+  next();
+};
+
+/**
+ * @route   GET /api/files/download/:folderName/:fileName
+ * @desc    Download a file (supports token in query string for iframe)
+ * @access  Private
+ */
+router.get('/download/:folderName/:fileName', handleQueryToken, authenticateToken, fileController.downloadFile);
+
+// All other file routes require authentication
 router.use(authenticateToken);
 
 /**
@@ -37,13 +53,6 @@ router.get('/folders', fileController.getFolders);
  * @access  Private
  */
 router.get('/folders/:folderName', fileController.getFilesInFolder);
-
-/**
- * @route   GET /api/files/download/:folderName/:fileName
- * @desc    Download a file
- * @access  Private
- */
-router.get('/download/:folderName/:fileName', fileController.downloadFile);
 
 /**
  * @route   GET /api/files/search
