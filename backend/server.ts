@@ -7,6 +7,7 @@ import userRoutes from './routes/user.routes';
 import sessionRoutes from './routes/session.routes';
 import loginHistoryRoutes from './routes/loginHistory.routes';
 import fileRoutes from './routes/file.routes';
+import trashRoutes from './routes/trash.routes';
 
 // Load environment variables
 dotenv.config();
@@ -38,6 +39,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/login-history', loginHistoryRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/trash', trashRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
