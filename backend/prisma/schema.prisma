@@ -34,10 +34,11 @@ model User {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   
-  sessions      Session[]
-  auditLogs     AuditLog[]
-  loginHistory  LoginHistory[]
+  sessions        Session[]
+  auditLogs       AuditLog[]
+  loginHistory    LoginHistory[]
   passwordHistory PasswordHistory[]
+  devices         Device[]
 }
 
 enum Role {
@@ -95,4 +96,25 @@ model PasswordHistory {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([userId])
+}
+
+model Device {
+  id              String   @id @default(uuid())
+  userId          String
+  fingerprint     String   @unique
+  deviceName      String
+  deviceType      String?
+  browser         String?
+  browserVersion  String?
+  os              String?
+  osVersion       String?
+  ipAddress       String?
+  isTrusted       Boolean  @default(false)
+  firstSeenAt     DateTime @default(now())
+  lastSeenAt      DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([fingerprint])
 }

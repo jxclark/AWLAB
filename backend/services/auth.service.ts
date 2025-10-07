@@ -4,6 +4,7 @@ import { hashPassword, comparePassword } from '../utils/password';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
 import { logLoginAttempt } from './loginHistory.service';
 import { sendAccountLockedEmail } from './email.service';
+import { trackDevice } from './deviceTracking.service';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
@@ -189,6 +190,9 @@ export const loginUser = async (data: LoginInput): Promise<AuthResponse> => {
 
   // Log successful login
   await logLoginAttempt(user.id, data.ipAddress, data.userAgent, true);
+
+  // Track device
+  await trackDevice(user.id, data.userAgent, data.ipAddress);
 
   // Remove password from response
   const { password, ...userWithoutPassword } = user;
