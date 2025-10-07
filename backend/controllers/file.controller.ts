@@ -23,17 +23,20 @@ export const getFolders = async (req: Request, res: Response) => {
 };
 
 /**
- * Get files in a folder
- * GET /api/files/folders/:folderName
+ * Get files in a folder with pagination
+ * GET /api/files/folders/:folderName?page=1&pageSize=50
  */
 export const getFilesInFolder = async (req: Request, res: Response) => {
   try {
     const { folderName } = req.params;
-    const files = await fileService.getFilesInFolder(folderName);
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 50;
+
+    const result = await fileService.getFilesInFolder(folderName, page, pageSize);
 
     res.status(200).json({
       message: 'Files retrieved successfully',
-      data: files,
+      data: result,
     });
   } catch (error: any) {
     console.error('Get files error:', error);
