@@ -213,6 +213,122 @@ export const deleteFile = async (folderName: string, fileName: string): Promise<
 };
 
 /**
+ * Get all files in trash with metadata
+ */
+export const getTrashFiles = async (): Promise<any[]> => {
+  try {
+    // Check if trash folder exists
+    try {
+      await stat(TRASH_PATH);
+    } catch {
+      return []; // No trash folder yet
+    }
+
+    const trashFiles: any[] = [];
+    const folders = await fs.readdir(TRASH_PATH, { withFileTypes: true });
+
+    for (const folder of folders) {
+      if (!folder.isDirectory()) continue;
+
+      const folderPath = path.join(TRASH_PATH, folder.name);
+      const files = await fs.readdir(folderPath);
+
+      // Get all PDF files and their metadata
+      for (const file of files) {
+        if (file.endsWith('.meta.json')) {
+          const metadataPath = path.join(folderPath, file);
+          const metadataContent = await fs.readFile(metadataPath, 'utf-8');
+          const metadata = JSON.parse(metadataContent);
+
+          const pdfFileName = file.replace('.meta.json', '');
+          const pdfPath = path.join(folderPath, pdfFileName);
+          
+          try {
+            const stats = await stat(pdfPath);
+            trashFiles.push({
+              ...metadata,
+              trashFileName: pdfFileName,
+              size: stats.size,
+              id: metadata.deletedTimestamp,
+            });
+          } catch {
+            // PDF file might be missing, skip
+          }
+        }
+      }
+    }
+
+    // Sort by deleted date (newest first)
+    return trashFiles.sort((a, b) => b.deletedTimestamp - a.deletedTimestamp);
+  } catch (error: any) {
+    console.error('Error reading trash:', error);
+    throw new Error(`Failed to read trash: ${error.message}`);
+  }
+};
+
+/**
+ * Restore file from trash
+ */
+export const restoreFile = async (timestamp: number, originalFolder: string, originalFileName: string): Promise<void> => {
+  try {
+    const trashFileName = `${timestamp}_${originalFileName}`;
+    const trashFilePath = path.join(TRASH_PATH, originalFolder, trashFileName);
+    const metadataPath = path.join(TRASH_PATH, originalFolder, `${trashFileName}.meta.json`);
+
+    // Verify trash file exists
+    try {
+      await stat(trashFilePath);
+    } catch {
+      throw new Error('File not found in trash');
+    }
+
+    // Restore to original location
+    const originalPath = path.join(BASE_PATH, originalFolder, originalFileName);
+    
+    // Check if original file already exists
+    try {
+      await stat(originalPath);
+      throw new Error('A file with this name already exists in the original location');
+    } catch (err: any) {
+      if (err.message.includes('already exists')) throw err;
+      // File doesn't exist, we can restore
+    }
+
+    // Copy file back to original location
+    await fs.copyFile(trashFilePath, originalPath);
+
+    // Delete from trash
+    await fs.unlink(trashFilePath);
+    await fs.unlink(metadataPath);
+
+    console.log(`✅ Restored: ${originalFolder}/${originalFileName}`);
+  } catch (error: any) {
+    console.error('Error restoring file:', error);
+    throw new Error(`Failed to restore file: ${error.message}`);
+  }
+};
+
+/**
+ * Permanently delete file from trash
+ */
+export const permanentlyDeleteFile = async (timestamp: number, originalFolder: string, originalFileName: string): Promise<void> => {
+  try {
+    const trashFileName = `${timestamp}_${originalFileName}`;
+    const trashFilePath = path.join(TRASH_PATH, originalFolder, trashFileName);
+    const metadataPath = path.join(TRASH_PATH, originalFolder, `${trashFileName}.meta.json`);
+
+    // Delete files
+    await fs.unlink(trashFilePath);
+    await fs.unlink(metadataPath);
+
+    console.log(`✅ Permanently deleted: ${originalFolder}/${originalFileName}`);
+  } catch (error: any) {
+    console.error('Error permanently deleting file:', error);
+    throw new Error(`Failed to permanently delete file: ${error.message}`);
+  }
+};
+
+/**
  * Search files across all folders
  */
 export const searchFiles = async (query: string): Promise<FileInfo[]> => {
