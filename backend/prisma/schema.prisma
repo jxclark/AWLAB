@@ -24,6 +24,8 @@ model User {
   isActive              Boolean   @default(true)
   isEmailVerified       Boolean   @default(false)
   mustChangePassword    Boolean   @default(false)
+  avatarStyle           String    @default("initials")
+  avatarSeed            String?
   emailVerificationToken String?  @unique
   emailVerificationExpiry DateTime?
   passwordResetToken    String?   @unique

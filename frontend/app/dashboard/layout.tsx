@@ -20,18 +20,21 @@ import {
   Settings,
   History,
   Smartphone,
-  LogOut,
-  User,
   Menu,
   X,
+  LogOut,
+  User,
   Trash2,
 } from 'lucide-react';
+import { UserAvatar } from '@/components/UserAvatar';
 
-interface User {
+interface UserType {
   firstName: string;
   lastName: string;
   email: string;
   role: string;
+  avatarStyle?: string;
+  avatarSeed?: string | null;
 }
 
 export default function DashboardLayout({
@@ -41,7 +44,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserType | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -54,6 +57,24 @@ export default function DashboardLayout({
     }
 
     setUser(JSON.parse(userData));
+
+    // Listen for storage changes (when avatar is updated)
+    const handleStorageChange = () => {
+      const updatedUserData = localStorage.getItem('user');
+      if (updatedUserData) {
+        setUser(JSON.parse(updatedUserData));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom event (for same-tab updates)
+    window.addEventListener('userUpdated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userUpdated', handleStorageChange);
+    };
   }, [router]);
 
   const handleLogout = () => {
@@ -114,9 +135,7 @@ export default function DashboardLayout({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center">
-                  <User className="h-4 w-4 text-indigo-600" />
-                </div>
+                <UserAvatar user={user} size={32} />
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
                   <p className="text-xs text-slate-500">{user.role}</p>

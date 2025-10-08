@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { User, Lock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UserAvatar, AVATAR_CATEGORIES } from '@/components/UserAvatar';
 
 interface UserData {
   id: string;
@@ -15,6 +17,8 @@ interface UserData {
   firstName: string;
   lastName: string;
   role: string;
+  avatarStyle?: string;
+  avatarSeed?: string | null;
 }
 
 export default function ProfilePage() {
@@ -245,7 +249,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Avatar Section - Placeholder */}
+      {/* Avatar Section */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -254,23 +258,94 @@ export default function ProfilePage() {
             </div>
             <div>
               <CardTitle>Profile Avatar</CardTitle>
-              <CardDescription>Choose an avatar for your profile</CardDescription>
+              <CardDescription>Choose an avatar style for your profile</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <div className="flex items-center gap-4">
-            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
-              {user.firstName[0]}{user.lastName[0]}
-            </div>
+            <UserAvatar user={user} size={80} />
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Avatar selection coming soon! For now, we&apos;re using your initials.
+              <p className="text-sm font-medium">Current Avatar</p>
+              <p className="text-xs text-slate-500">
+                {user.avatarStyle || 'initials'}
               </p>
-              <Button variant="outline" disabled className="mt-2">
-                Choose Avatar (Coming Soon)
-              </Button>
             </div>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Choose Avatar Style</Label>
+            <Tabs defaultValue="basic" className="w-full">
+              <TabsList className="grid w-full grid-cols-5">
+                {Object.entries(AVATAR_CATEGORIES).map(([key, category]) => (
+                  <TabsTrigger key={key} value={key}>
+                    {category.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              
+              {Object.entries(AVATAR_CATEGORIES).map(([key, category]) => (
+                <TabsContent key={key} value={key} className="mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {category.styles.map((style) => (
+                <button
+                  key={style.id}
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const token = localStorage.getItem('accessToken');
+                      const response = await fetch(`http://localhost:5000/api/users/${user.id}`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                          avatarStyle: style.id,
+                          avatarSeed: user.email, // Use email as seed
+                        }),
+                      });
+
+                      if (!response.ok) {
+                        throw new Error('Failed to update avatar');
+                      }
+
+                      // Update local state
+                      const updatedUser = { ...user, avatarStyle: style.id, avatarSeed: user.email };
+                      setUser(updatedUser);
+                      localStorage.setItem('user', JSON.stringify(updatedUser));
+                      
+                      // Dispatch custom event to update navbar
+                      window.dispatchEvent(new Event('userUpdated'));
+                      
+                      setSuccess('Avatar updated successfully!');
+                      setTimeout(() => setSuccess(''), 3000);
+                    } catch (err) {
+                      setError('Failed to update avatar');
+                    }
+                  }}
+                  className={`p-4 border-2 rounded-lg hover:border-indigo-500 transition-colors text-left ${
+                    (user.avatarStyle || 'initials') === style.id
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950'
+                      : 'border-slate-200 dark:border-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <UserAvatar 
+                      user={{ ...user, avatarStyle: style.id, avatarSeed: user.email }} 
+                      size={40} 
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{style.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{style.description}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
           </div>
         </CardContent>
       </Card>
